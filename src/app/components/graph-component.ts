@@ -45,6 +45,7 @@ export class GraphComponent implements OnInit {
 
   drawSVG(d3: D3){
 
+    // sample at some number of points for drawing evolute
     let sampleIncrement:number = (this.b-this.a)/this.numPoints;
     let samplePoints = d3.range(this.numPoints).map((elem, index)=>this.a+index*sampleIncrement);
 
@@ -61,10 +62,12 @@ export class GraphComponent implements OnInit {
    // let dataset = new Array(this.numCurvePoints);
     //dataset = dataset.map((elem, index)=>[x[index],y[index]]);
 
-    let dataset = d3.range(this.numCurvePoints).map((elem, index)=>{
+    let dataset = d3.range(this.numCurvePoints-1).map((elem, index)=>{
       return {
-        x: this.x[index],
-        y: this.y[index]
+        x1: this.x[index],
+        y1: this.y[index],
+        x2: this.x[index+1],
+        y2: this.y[index+1]
       };
     });
 
@@ -80,10 +83,30 @@ export class GraphComponent implements OnInit {
     let h = this.svgHeight;
     let padding = 20;
 
-    svg.selectAll<SVGCircleElement, any>("circle").data(dataset).enter()
+    /*svg.selectAll<SVGCircleElement, any>("circle").data(dataset).enter()
       .append<SVGCircleElement>("circle")
       .attr("cx", function(d){return xScale(d.x);})
-      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", 3);
+      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", 3);*/
+
+    svg.selectAll<SVGLineElement, any>("line").data(dataset).enter()
+      .append<SVGLineElement>("line")
+      .attr("x1", function(d){return xScale(d.x1);})
+      .attr("x2", function(d){return xScale(d.x2);})
+      .attr("y1", function(d){return h-yScale(d.y1);})
+      .attr("y2", function(d){return h-yScale(d.y2);}).style("stroke", "black").style("stroke-width", 2);
+
+    // draw sampling points for creating evolute
+    let samplingPointsData = d3.range(this.numPoints).map((elem, index)=>{
+      return{
+        x: this.xfunc(samplePoints[index]),
+        y: this.yfunc(samplePoints[index])
+      }
+    });
+
+    svg.selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
+      .append<SVGCircleElement>("circle")
+      .attr("cx", function(d){return xScale(d.x);})
+      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3");
 
     // add axes at the end of script so they display on top
     let xAxis = d3.axisBottom(xScale);
