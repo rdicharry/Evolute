@@ -6,20 +6,21 @@ import { FormsModule } from '@angular/forms';
 //import { MapService } from './services/map-service';
 
 import { AppComponent } from './app.component';
-//import { MapComponent } from './components/map-component';
+import { GraphComponent } from './components/graph-component';
+import { D3Service} from 'd3-ng2-service';
 
 
 
 @NgModule({
     declarations: [
-        AppComponent//, MapComponent
+        AppComponent, GraphComponent
     ],
     imports: [
         BrowserModule,
         FormsModule,
         //HttpModule
     ],
-    //providers: [MapService],
+    providers: [D3Service],
     bootstrap: [AppComponent]
 })
 export class AppModule { }
