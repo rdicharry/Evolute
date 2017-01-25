@@ -43,6 +43,71 @@ export class GraphComponent implements OnInit {
 
   }
 
+  /**
+   * find the first derivative for a parameterized curve given by x(t) y(t)
+   * a the specified sample points, spaced increment units apart
+   * @return an array of objects {x:dx/dt,y:dy/dt}
+   */
+  samplePointsDerivative(samplePoints, increment, x, y){
+
+    return samplePoints.map((elem, index)=>{
+      let t = elem + increment*index;
+      return {
+        /* tangent slope calculated over 2*increment (2*delta t) in order
+        to ensure it is *centered* on the sample point, rather than off to the side
+         */
+        y: (y(t+increment/2)-y(t-increment/2))/(increment),
+        x: (x(t+increment/2)-x(t-increment/2))/(increment)
+      };
+    });
+
+  }
+
+  /**
+   * find the second derivative for a parameterized curve given by x(t) y(t)
+   * at the specified sampel points, spaced increment units apart
+   *
+   */
+  samplePointsSecondDerivative(samplePoints, increment, x, y){
+
+    return samplePoints.map((elem, index)=>{
+      let t = elem+increment*index;
+      return {
+        y: (((y(t+increment)-y(t))/increment)-((y(t)-y(t-increment))/increment))/(2*increment),
+        x: (((x(t+increment)-x(t))/increment)-((x(t)-x(t-increment))/increment))/(2*increment)
+      }
+    });
+
+  }
+
+  createAndScaleNormalVectors(firstDerivativePoints, curvaturePoints){
+    // create and normalize normal vectors, then scale normal vectors to length of curvature at that point
+    return firstDerivativePoints.map((elem, index)=>{
+      let mag = this.magnitude(elem.x, elem.y);
+      return {
+        x: -curvaturePoints[index]*(elem.y/mag),
+        y: curvaturePoints[index]*(elem.x/mag)
+      }
+    });
+  }
+
+  /**
+   * calculate magnitude of second derivative at sampling points
+   * @param secondDerivative computed at sampling points
+   * @returns
+   */
+  curvature(secondDerivative){
+
+    return secondDerivative.map((elem)=>{
+      return this.magnitude(elem.x,elem.y);
+    })
+
+  }
+
+  static magnitude(x,y){
+    return Math.sqrt((Math.pow(y,2)+Math.pow(x,2)));
+  }
+
   drawSVG(d3: D3){
 
     // sample at some number of points for drawing evolute
@@ -107,6 +172,33 @@ export class GraphComponent implements OnInit {
       .append<SVGCircleElement>("circle")
       .attr("cx", function(d){return xScale(d.x);})
       .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3");
+
+
+    let d = this.samplePointsDerivative(samplePoints, sampleIncrement, this.xfunc, this.yfunc);
+    let d2 = this.samplePointsSecondDerivative(samplePoints, sampleIncrement, this.xfunc, this.yfunc);
+    let k = this.curvature(d2);
+
+
+    let normals = this.createAndScaleNormalVectors(d, k);
+
+
+    // draw normal lines - sampling points data + calculate second point along normal
+    // create a set of points for the second point (the one on the evolute curve)
+    let evolutePoints = samplingPointsData.map((elem, index)=>{
+      return {
+        x: elem.x+
+      }
+    })
+
+
+
+
+
+
+
+
+
+
 
     // add axes at the end of script so they display on top
     let xAxis = d3.axisBottom(xScale);
