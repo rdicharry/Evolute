@@ -203,11 +203,12 @@ export class GraphComponent implements OnInit {
 
     // draw sampling points for creating evolute
 
-
-   /* svg.append("g").attr("class", "sampling-points").selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
+    let msDelay = 200; // ms
+    let numPoints=this.numPoints;
+    svg.append("g").attr("class", "sampling-points").selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
       .append<SVGCircleElement>("circle")
       .transition().delay(function(d, i){
-        return i / samplingPointsData.length*2000;
+        return i*msDelay;
     })
       .attr("cx", function(d){return xScale(d.x);})
       .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3").attr("fill", "green");
@@ -215,7 +216,7 @@ export class GraphComponent implements OnInit {
     svg.append("g").attr("class", "normal-lines").selectAll<SVGLineElement, any>("line").data(normalLines)
       .enter().append<SVGLineElement>("line")
       .transition().delay(function(d, i){
-      return i / samplingPointsData.length*2000;
+      return numPoints*msDelay+i*msDelay;
     })
       .attr("x1", function(d){return xScale(d.x1)})
       .attr("x2" ,function(d){return xScale(d.x2)})
@@ -228,12 +229,13 @@ export class GraphComponent implements OnInit {
     // draw normal end points (samples along evolute curve
     svg.append("g").attr("class", "evolute-points").selectAll<SVGCircleElement, any>("circle").data(evolutePoints).enter()
       .append<SVGCircleElement>("circle")
-      .transition().duration(1000)
-      .attr("cx", function(d){return xScale(d[0]);})
-      .attr("cy", function(d){return h-yScale(d[1]);}).attr("r", "3").attr("fill", "purple");*/
+      .transition().delay(function(d, i){
+      return 2*numPoints*msDelay+i*msDelay;
+    })      .attr("cx", function(d){return xScale(d[0]);})
+      .attr("cy", function(d){return h-yScale(d[1]);}).attr("r", "3").attr("fill", "purple");
 
 
-   let msDelay = 200; // ms
+/*
     for(let i = 0; i < this.numPoints; i++){
 
       let g = svg.append("g").attr("class", "sampling-points");
@@ -262,7 +264,7 @@ export class GraphComponent implements OnInit {
         .attr("cy", function(d){return h-yScale(d[1]);}).attr("r", "3").attr("fill", "purple");
 
 
-    }
+    }*/
 
 
     // draw splines to represent evolute curve:
@@ -281,7 +283,7 @@ export class GraphComponent implements OnInit {
 
     svg/*.append("g").attr("class", "evolute-curve").selectAll<SVGPathElement, any>("path")*/
       .append<SVGPathElement>("path")
-      .transition().delay(msDelay*(this.numPoints+1))
+      .transition().delay(3*msDelay*(this.numPoints+1))
       /*.data(evolutePoints).enter()*/.attr("class", "line")
       .attr("d", lineFunction(evolutePoints))
       .attr("stroke", "black").attr("stroke-width", 2).attr("fill", "none");
