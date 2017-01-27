@@ -83,7 +83,7 @@ export class GraphComponent implements OnInit {
   createAndScaleNormalVectors(firstDerivativePoints, curvaturePoints){
     // create and normalize normal vectors, then scale normal vectors to length of curvature at that point
     return firstDerivativePoints.map((elem, index)=>{
-      let mag = this.magnitude(elem.x, elem.y);
+      let mag = GraphComponent.magnitude(elem.x, elem.y);
       return {
         x: -curvaturePoints[index]*(elem.y/mag),
         y: curvaturePoints[index]*(elem.x/mag)
@@ -99,13 +99,13 @@ export class GraphComponent implements OnInit {
   curvature(secondDerivative){
 
     return secondDerivative.map((elem)=>{
-      return this.magnitude(elem.x,elem.y);
+      return GraphComponent.magnitude(elem.x,elem.y);
     })
 
   }
 
   static magnitude(x,y){
-    return Math.sqrt((Math.pow(y,2)+Math.pow(x,2)));
+    return Math.sqrt((Math.pow(x,2)+Math.pow(y,2)));
   }
 
   drawSVG(d3: D3){
@@ -136,7 +136,8 @@ export class GraphComponent implements OnInit {
       };
     });
 
-    let xScale = d3.scaleLinear().domain([d3.min(this.x), d3.max(this.x)]).range([0, this.svgWidth]);
+    //TODO dynamically pick the scales based on min/max of points (including evolute points!)
+    let xScale = d3.scaleLinear().domain([/*d3.min(this.x)*/ -1, d3.max(this.x)]).range([0, this.svgWidth]);
     let yScale = d3.scaleLinear().domain([d3.min(this.y), d3.max(this.y)]).range([0, this.svgHeight]);
 
 
@@ -153,7 +154,7 @@ export class GraphComponent implements OnInit {
       .attr("cx", function(d){return xScale(d.x);})
       .attr("cy", function(d){return h-yScale(d.y);}).attr("r", 3);*/
 
-    svg.selectAll<SVGLineElement, any>("line").data(dataset).enter()
+    svg.append("g").attr("class", "function-lines").selectAll<SVGLineElement, any>("line").data(dataset).enter()
       .append<SVGLineElement>("line")
       .attr("x1", function(d){return xScale(d.x1);})
       .attr("x2", function(d){return xScale(d.x2);})
@@ -168,10 +169,10 @@ export class GraphComponent implements OnInit {
       }
     });
 
-    svg.selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
+    svg.append("g").attr("class", "sampling-points").selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
       .append<SVGCircleElement>("circle")
       .attr("cx", function(d){return xScale(d.x);})
-      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3");
+      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3").attr("fill", "green");
 
 
     let d = this.samplePointsDerivative(samplePoints, sampleIncrement, this.xfunc, this.yfunc);
@@ -185,13 +186,58 @@ export class GraphComponent implements OnInit {
     // draw normal lines - sampling points data + calculate second point along normal
     // create a set of points for the second point (the one on the evolute curve)
     let evolutePoints = samplingPointsData.map((elem, index)=>{
+      return [
+        elem.x+ normals[index].x,
+        elem.y+ normals[index].y
+
+      ]
+    });
+
+    // draw normal end points (samples along evolute curve
+    svg.append("g").attr("class", "evolute-points").selectAll<SVGCircleElement, any>("circle").data(evolutePoints).enter()
+      .append<SVGCircleElement>("circle")
+      .attr("cx", function(d){return xScale(d[0]);})
+      .attr("cy", function(d){return h-yScale(d[1]);}).attr("r", "3").attr("fill", "purple");
+
+    console.log("evolute xs: "+evolutePoints.map((entry)=> entry[0]));
+    console.log("evolute ys: "+evolutePoints.map((entry)=> entry[1]));
+
+    // associate sample points and evolute points to generate normal lines
+    let normalLines = samplingPointsData.map((elem, index)=>{
       return {
-        x: elem.x+
+        x1: elem.x,
+        y1: elem.y,
+        x2: elem.x+ normals[index].x,
+        y2: elem.y+ normals[index].y,
       }
-    })
+    });
+
+    svg.append("g").attr("class", "normal-lines").selectAll<SVGLineElement, any>("line").data(normalLines)
+      .enter().append<SVGLineElement>("line")
+      .attr("x1", function(d){return xScale(d.x1)})
+      .attr("x2" ,function(d){return xScale(d.x2)})
+      .attr("y1", function(d){return h-yScale(d.y1)})
+      .attr("y2", function(d){return h-yScale(d.y2)})
+      .style("stroke", "gray").style("stroke-width", 2);
+
+    // draw splines to represent evolute curve:
+
+    // line().x() and line.y() expect input of the type:
+    // (d:[number, number], index: number, data:[number, number][])=>number)
+    // in ohter words, VERY specific about format of input data why?
+    let evoluteCurve = function(d) {
+      return d3.line().curve(d3.curveCatmullRom)
+        .x(function (d) {
+          return d[0]
+        })
+        .y(function (d) {
+          return d[1]
+        }); // need to scale x and y?
+    };
 
 
-
+    svg.append("g").attr("class", "evolute-curve").selectAll<SVGPathElement, any>("path").data(evolutePoints).enter()
+      .append("path").attr("class", "line").attr("d", evoluteCurve(Array.from(d)));
 
 
 
