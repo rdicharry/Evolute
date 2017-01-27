@@ -185,13 +185,15 @@ export class GraphComponent implements OnInit {
 
     // draw normal lines - sampling points data + calculate second point along normal
     // create a set of points for the second point (the one on the evolute curve)
-    let evolutePoints = samplingPointsData.map((elem, index)=>{
+    let evolutePoints: [number, number][] = samplingPointsData.map((elem, index): [number, number]=> {
       return [
-        elem.x+ normals[index].x,
-        elem.y+ normals[index].y
+        Number(elem.x + normals[index].x),
+        Number(elem.y + normals[index].y)
 
-      ]
+    ];
     });
+
+    //console.log("evolutePoints: "+evolutePoints);
 
     // draw normal end points (samples along evolute curve
     svg.append("g").attr("class", "evolute-points").selectAll<SVGCircleElement, any>("circle").data(evolutePoints).enter()
@@ -199,8 +201,8 @@ export class GraphComponent implements OnInit {
       .attr("cx", function(d){return xScale(d[0]);})
       .attr("cy", function(d){return h-yScale(d[1]);}).attr("r", "3").attr("fill", "purple");
 
-    console.log("evolute xs: "+evolutePoints.map((entry)=> entry[0]));
-    console.log("evolute ys: "+evolutePoints.map((entry)=> entry[1]));
+    //console.log("evolute xs: "+evolutePoints.map((entry)=> entry.x));
+    //console.log("evolute ys: "+evolutePoints.map((entry)=> entry.y));
 
     // associate sample points and evolute points to generate normal lines
     let normalLines = samplingPointsData.map((elem, index)=>{
@@ -225,7 +227,15 @@ export class GraphComponent implements OnInit {
     // line().x() and line.y() expect input of the type:
     // (d:[number, number], index: number, data:[number, number][])=>number)
     // in ohter words, VERY specific about format of input data why?
-    let evoluteCurve = function(d) {
+    let lineFunction = d3.line()/*.curve(d3.curveCatmullRom)*/
+      .x(function (d) {
+      return xScale(d[0]);
+    })
+      .y(function (d) {
+        return h-yScale(d[1]);
+      });
+
+    /*let evoluteCurve = function(d) {
       return d3.line().curve(d3.curveCatmullRom)
         .x(function (d) {
           return d[0]
@@ -233,11 +243,17 @@ export class GraphComponent implements OnInit {
         .y(function (d) {
           return d[1]
         }); // need to scale x and y?
-    };
+    };*/
 
 
-    svg.append("g").attr("class", "evolute-curve").selectAll<SVGPathElement, any>("path").data(evolutePoints).enter()
-      .append("path").attr("class", "line").attr("d", evoluteCurve(Array.from(d)));
+
+    console.log("path: "+ lineFunction(evolutePoints));
+
+    svg/*.append("g").attr("class", "evolute-curve").selectAll<SVGPathElement, any>("path")*/
+      .append<SVGPathElement>("path")
+      /*.data(evolutePoints).enter()*/.attr("class", "line")
+      .attr("d", /*function(d) {return lineFunction(evolutePoints)}*/lineFunction(evolutePoints))
+      .attr("stroke", "black").attr("stroke-width", 2).attr("fill", "none");
 
 
 
