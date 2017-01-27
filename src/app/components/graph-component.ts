@@ -136,44 +136,12 @@ export class GraphComponent implements OnInit {
       };
     });
 
-    //TODO dynamically pick the scales based on min/max of points (including evolute points!)
-    let xScale = d3.scaleLinear().domain([/*d3.min(this.x)*/ -1, d3.max(this.x)]).range([0, this.svgWidth]);
-    let yScale = d3.scaleLinear().domain([d3.min(this.y), d3.max(this.y)]).range([0, this.svgHeight]);
-
-
-
-
-    let svg = d3.select("#graph-svg").append("svg");
-    svg.attr("width", this.svgWidth).attr("height", this.svgHeight);
-
-    let h = this.svgHeight;
-    let padding = 20;
-
-    /*svg.selectAll<SVGCircleElement, any>("circle").data(dataset).enter()
-      .append<SVGCircleElement>("circle")
-      .attr("cx", function(d){return xScale(d.x);})
-      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", 3);*/
-
-    svg.append("g").attr("class", "function-lines").selectAll<SVGLineElement, any>("line").data(dataset).enter()
-      .append<SVGLineElement>("line")
-      .attr("x1", function(d){return xScale(d.x1);})
-      .attr("x2", function(d){return xScale(d.x2);})
-      .attr("y1", function(d){return h-yScale(d.y1);})
-      .attr("y2", function(d){return h-yScale(d.y2);}).style("stroke", "black").style("stroke-width", 2);
-
-    // draw sampling points for creating evolute
     let samplingPointsData = d3.range(this.numPoints).map((elem, index)=>{
       return{
         x: this.xfunc(samplePoints[index]),
         y: this.yfunc(samplePoints[index])
       }
     });
-
-    svg.append("g").attr("class", "sampling-points").selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
-      .append<SVGCircleElement>("circle")
-      .attr("cx", function(d){return xScale(d.x);})
-      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3").attr("fill", "green");
-
 
     let d = this.samplePointsDerivative(samplePoints, sampleIncrement, this.xfunc, this.yfunc);
     let d2 = this.samplePointsSecondDerivative(samplePoints, sampleIncrement, this.xfunc, this.yfunc);
@@ -190,10 +158,46 @@ export class GraphComponent implements OnInit {
         Number(elem.x + normals[index].x),
         Number(elem.y + normals[index].y)
 
-    ];
+      ];
     });
 
     //console.log("evolutePoints: "+evolutePoints);
+
+
+    //TODO dynamically pick the scales based on min/max of points (including evolute points!)
+
+    let xMin = d3.min(this.x.concat(evolutePoints.map((elem)=>elem[0])));
+    let xScale = d3.scaleLinear().domain([xMin, d3.max(this.x)]).range([0, this.svgWidth]);
+    let yScale = d3.scaleLinear().domain([d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1]))), d3.max(this.y)]).range([0, this.svgHeight]);
+
+
+
+
+    let svg = d3.select("#graph-svg").append("svg");
+    svg.attr("width", this.svgWidth).attr("height", this.svgHeight);
+
+    let h = this.svgHeight;
+    let padding = 30;
+
+
+
+    svg.append("g").attr("class", "function-lines").selectAll<SVGLineElement, any>("line").data(dataset).enter()
+      .append<SVGLineElement>("line")
+      .attr("x1", function(d){return xScale(d.x1);})
+      .attr("x2", function(d){return xScale(d.x2);})
+      .attr("y1", function(d){return h-yScale(d.y1);})
+      .attr("y2", function(d){return h-yScale(d.y2);}).style("stroke", "black").style("stroke-width", 2);
+
+    // draw sampling points for creating evolute
+
+
+    svg.append("g").attr("class", "sampling-points").selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
+      .append<SVGCircleElement>("circle")
+      .attr("cx", function(d){return xScale(d.x);})
+      .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3").attr("fill", "green");
+
+
+
 
     // draw normal end points (samples along evolute curve
     svg.append("g").attr("class", "evolute-points").selectAll<SVGCircleElement, any>("circle").data(evolutePoints).enter()
@@ -224,10 +228,8 @@ export class GraphComponent implements OnInit {
 
     // draw splines to represent evolute curve:
 
-    // line().x() and line.y() expect input of the type:
-    // (d:[number, number], index: number, data:[number, number][])=>number)
-    // in ohter words, VERY specific about format of input data why?
-    let lineFunction = d3.line()/*.curve(d3.curveCatmullRom)*/
+    // line().x() and line.y() expect input of very specific type:
+    let lineFunction = d3.line().curve(d3.curveCatmullRom)
       .x(function (d) {
       return xScale(d[0]);
     })
@@ -235,24 +237,13 @@ export class GraphComponent implements OnInit {
         return h-yScale(d[1]);
       });
 
-    /*let evoluteCurve = function(d) {
-      return d3.line().curve(d3.curveCatmullRom)
-        .x(function (d) {
-          return d[0]
-        })
-        .y(function (d) {
-          return d[1]
-        }); // need to scale x and y?
-    };*/
-
-
 
     console.log("path: "+ lineFunction(evolutePoints));
 
     svg/*.append("g").attr("class", "evolute-curve").selectAll<SVGPathElement, any>("path")*/
       .append<SVGPathElement>("path")
       /*.data(evolutePoints).enter()*/.attr("class", "line")
-      .attr("d", /*function(d) {return lineFunction(evolutePoints)}*/lineFunction(evolutePoints))
+      .attr("d", lineFunction(evolutePoints))
       .attr("stroke", "black").attr("stroke-width", 2).attr("fill", "none");
 
 
@@ -270,7 +261,7 @@ export class GraphComponent implements OnInit {
     //svg.append("g").call(xAxis);
     //svg.append("g").call(yAxis);
     svg.append("g").attr("class", "axis").attr("transform", "translate(0,"+(h-padding)+")").call(xAxis);
-    svg.append("g").attr("class", "axis").attr("transform", "translate("+padding+", 0)").call(yAxis);
+    svg.append("g").attr("class", "axis").attr("transform", "translate("+padding/*+xScale(xMin)*/+", 0)").call(yAxis);
 
   }
 
