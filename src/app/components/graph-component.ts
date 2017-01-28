@@ -22,18 +22,18 @@ export class GraphComponent implements OnInit {
   private svgHeight = 500;
 
   public a:number = 0;
-  public b:number = 1;
+  public b:number = 4;
 
   public x: Array<number>;
   public y: Array<number>;
 
-  public xfunc = function(t){return t}; // parameterized function for x values
-  public yfunc = function(t){return t*t}; // parameterized function for y values
+  public xfunc = function(t){return Math.cos(t)}; // parameterized function for x values
+  public yfunc = function(t){return Math.sin(t)}; // parameterized function for y values
 
 
 
   private numCurvePoints = 1000; // input points for drawing curve
-  public numPoints:number = 10; // user-chosen number of sampling
+  public numPoints:number = 32; // user-chosen number of sampling
   // points for drawing the evolute
 
   ngOnInit(){
@@ -51,7 +51,7 @@ export class GraphComponent implements OnInit {
   samplePointsDerivative(samplePoints, increment, x, y){
 
     return samplePoints.map((elem, index)=>{
-      let t = elem + increment*index;
+      let t = elem/* + increment*index*/;
       return {
         /* tangent slope calculated over 2*increment (2*delta t) in order
         to ensure it is *centered* on the sample point, rather than off to the side
@@ -71,10 +71,10 @@ export class GraphComponent implements OnInit {
   samplePointsSecondDerivative(samplePoints, increment, x, y){
 
     return samplePoints.map((elem, index)=>{
-      let t = elem+increment*index;
+      let t = elem/*+increment*index*/;
       return {
-        y: (((y(t+increment)-y(t))/increment)-((y(t)-y(t-increment))/increment))/(2*increment),
-        x: (((x(t+increment)-x(t))/increment)-((x(t)-x(t-increment))/increment))/(2*increment)
+        y: (((y(t+increment)-y(t))/increment)-((y(t)-y(t-increment))/increment))/(increment),
+        x: (((x(t+increment)-x(t))/increment)-((x(t)-x(t-increment))/increment))/(increment)
       }
     });
 
@@ -85,8 +85,8 @@ export class GraphComponent implements OnInit {
     return firstDerivativePoints.map((elem, index)=>{
       let mag = GraphComponent.magnitude(elem.x, elem.y);
       return {
-        x: -curvaturePoints[index]*(elem.y/mag),
-        y: curvaturePoints[index]*(elem.x/mag)
+        x: -(curvaturePoints[index])*(elem.y/mag),
+        y: (curvaturePoints[index])*(elem.x/mag)
       }
     });
   }
@@ -100,6 +100,16 @@ export class GraphComponent implements OnInit {
 
     return secondDerivative.map((elem)=>{
       return GraphComponent.magnitude(elem.x,elem.y);
+    })
+
+  }
+
+  /** TODO this is wrong!! */
+  radiusOfCurvature(firstDerivative, secondDerivative){
+
+    return secondDerivative.map((elem, index)=>{
+      let mag = GraphComponent.magnitude(firstDerivative[index].x, firstDerivative[index].y);
+      return (mag**3)/(firstDerivative[index].x*secondDerivative[index].y-firstDerivative[index].y*secondDerivative[index].x)
     })
 
   }
@@ -143,10 +153,9 @@ export class GraphComponent implements OnInit {
       }
     });
 
-    let d = this.samplePointsDerivative(samplePoints, sampleIncrement, this.xfunc, this.yfunc);
-    let d2 = this.samplePointsSecondDerivative(samplePoints, sampleIncrement, this.xfunc, this.yfunc);
+    let d = this.samplePointsDerivative(samplePoints, tIncrement, this.xfunc, this.yfunc);
+    let d2 = this.samplePointsSecondDerivative(samplePoints, tIncrement, this.xfunc, this.yfunc);
     let k = this.curvature(d2);
-
 
     let normals = this.createAndScaleNormalVectors(d, k);
 
@@ -180,8 +189,8 @@ export class GraphComponent implements OnInit {
     // dynamically pick the scales based on min/max of points (including evolute points!)
 
     let xMin = d3.min(this.x.concat(evolutePoints.map((elem)=>elem[0])));
-    let xScale = d3.scaleLinear().domain([xMin, d3.max(this.x)]).range([0, this.svgWidth]);
-    let yScale = d3.scaleLinear().domain([d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1]))), d3.max(this.y)]).range([0, this.svgHeight]);
+    let xScale = d3.scaleLinear().domain([xMin, d3.max(this.x.concat(evolutePoints.map((elem)=>elem[0])))]).range([0, this.svgWidth]);
+    let yScale = d3.scaleLinear().domain([d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1]))), d3.max(this.y.concat(evolutePoints.map((elem)=>elem[1])))]).range([0, this.svgHeight]);
 
 
 
