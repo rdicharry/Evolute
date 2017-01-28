@@ -22,18 +22,18 @@ export class GraphComponent implements OnInit {
   private svgHeight = 500;
 
   public a:number = 0;
-  public b:number = 4;
+  public b:number = 6.5;
 
   public x: Array<number>;
   public y: Array<number>;
 
-  public xfunc = function(t){return Math.cos(t)}; // parameterized function for x values
+  public xfunc = function(t){return 3*Math.cos(t)}; // parameterized function for x values
   public yfunc = function(t){return Math.sin(t)}; // parameterized function for y values
 
 
 
   private numCurvePoints = 1000; // input points for drawing curve
-  public numPoints:number = 32; // user-chosen number of sampling
+  public numPoints:number = 15; // user-chosen number of sampling
   // points for drawing the evolute
 
   ngOnInit(){
@@ -190,7 +190,7 @@ export class GraphComponent implements OnInit {
 
     let xMin = d3.min(this.x.concat(evolutePoints.map((elem)=>elem[0])));
     let xScale = d3.scaleLinear().domain([xMin, d3.max(this.x.concat(evolutePoints.map((elem)=>elem[0])))]).range([0, this.svgWidth]);
-    let yScale = d3.scaleLinear().domain([d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1]))), d3.max(this.y.concat(evolutePoints.map((elem)=>elem[1])))]).range([0, this.svgHeight]);
+    let yScale = d3.scaleLinear().domain([d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1]))), d3.max(this.y.concat(evolutePoints.map((elem)=>elem[1])))]).range([this.svgHeight, 0]);
 
 
 
@@ -312,7 +312,7 @@ export class GraphComponent implements OnInit {
     //svg.append("g").call(xAxis);
     //svg.append("g").call(yAxis);
     svg.append("g").attr("class", "axis").attr("transform", "translate(0,"+(h-padding)+")").call(xAxis);
-    svg.append("g").attr("class", "axis").attr("transform", "translate("+padding/*+xScale(xMin)*/+", 0)").call(yAxis);
+    svg.append("g").attr("class", "axis").attr("transform", "translate("+padding+/*xScale(xMin)+*/", 0)").call(yAxis);
 
   }
 
