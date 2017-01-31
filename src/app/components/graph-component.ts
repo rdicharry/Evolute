@@ -64,6 +64,7 @@ export class GraphComponent implements OnInit {
     this.yfunc = this.mathjs.eval('y(t) = '+this.yexpression, this.scope);
 
 
+
     let d3 = this.d3;
     this.drawSVG(d3);
   }
@@ -273,6 +274,10 @@ export class GraphComponent implements OnInit {
 
 
 
+    if(this.svg) {
+      // clear any existing svg attributes
+      this.d3.selectAll("svg").remove();
+    }
 
     this.svg = d3.select("#graph-svg").append("svg");
     this.svg.attr("width", this.svgWidth).attr("height", this.svgHeight);
