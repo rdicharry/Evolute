@@ -1,5 +1,6 @@
 import {Component, OnInit, ElementRef} from "@angular/core";
 import {D3Service, D3, Selection} from 'd3-ng2-service';
+import {Line} from "../classes/Line";
 
 // create a Graph class if I decide to store graphs later
 
@@ -13,7 +14,10 @@ export class GraphComponent implements OnInit {
   constructor(element: ElementRef, d3Service: D3Service) {
     this.d3 = d3Service.getD3();
     this.parentNativeElement = element.nativeElement;
+    this.mathjs = require('mathjs');
   }
+
+  private mathjs;
 
   private d3: D3;
   private parentNativeElement: any;
@@ -21,13 +25,13 @@ export class GraphComponent implements OnInit {
   private svgWidth = 500;
   private svgHeight = 500;
 
-  public a:number = 0;
-  public b:number = 6.5;
+  public a:number = -3.2;
+  public b:number = 3;
 
   public x: Array<number>;
   public y: Array<number>;
 
-  public xfunc = function(t){return 3*Math.cos(t)}; // parameterized function for x values
+  public xfunc = function(t){return Math.cos(t)}; // parameterized function for x values
   public yfunc = function(t){return Math.sin(t)}; // parameterized function for y values
 
 
@@ -37,10 +41,13 @@ export class GraphComponent implements OnInit {
   // points for drawing the evolute
 
   ngOnInit(){
+    this.redrawSVG();
+
+  }
+
+  redrawSVG(){
     let d3 = this.d3;
-
     this.drawSVG(d3);
-
   }
 
   /**
@@ -91,15 +98,66 @@ export class GraphComponent implements OnInit {
     });
   }
 
+  createNormalVectors(firstDerivativePoints){
+    return firstDerivativePoints.map((elem, index)=>{
+      return {
+        x: -elem.y,
+        y: elem.x
+      }
+    })
+  }
+
+  createNormalLineEndpoints(samplingPointsData, normals, evolutePoints) {
+    return samplingPointsData.map((elem, index) => {
+
+      let normalMagnitude = GraphComponent.magnitude(normals[index].x, normals[index].y);
+      let evoluteMagnitude = GraphComponent.magnitude(evolutePoints[index][0], evolutePoints[index][1]);
+      console.log("normal mag: "+normalMagnitude+", evoluteMag: "+evoluteMagnitude);
+      return new Line(elem.x,
+        elem.y,
+        evolutePoints[index][0],
+        evolutePoints[index][1]);/*{
+        x1: elem.x,
+        y1: elem.y,
+        x2: elem.x + (evoluteMagnitude / normalMagnitude) * normals[index].x,
+        y2: elem.y + (evoluteMagnitude / normalMagnitude) * normals[index].y
+      }*/
+    });
+  }
+
   /**
-   * calculate magnitude of second derivative at sampling points
+   * calculate curvature at sampling points
    * @param secondDerivative computed at sampling points
    * @returns
    */
-  curvature(secondDerivative){
+  curvature(secondDerivative, normals){
 
-    return secondDerivative.map((elem)=>{
-      return GraphComponent.magnitude(elem.x,elem.y);
+    return secondDerivative.map((elem, index)=>{
+      return {
+        x: elem.x/normals[index].x,
+        y: elem.y/normals[index].y
+      }
+    })
+
+  }
+
+  /**
+   * As defined by doCarmo, Section 1.5 Remark 1
+   *
+   * note: these are returned inside arrays because the D3 path generator (line function)
+   * *requires* that format
+   * @param samplePoints
+   * @param curvaturePoints
+   * @param normalPoints
+   */
+  evolutePoints(samplePoints, curvaturePoints, normalPoints){
+    return samplePoints.map((elem, index)=>{
+      let mag = GraphComponent.magnitude(curvaturePoints[index].x, curvaturePoints[index].y);
+      console.log(mag);
+      return [
+        elem.x+normalPoints[index].x/mag,
+        elem.y+normalPoints[index].y/mag
+      ]
     })
 
   }
@@ -155,33 +213,33 @@ export class GraphComponent implements OnInit {
 
     let d = this.samplePointsDerivative(samplePoints, tIncrement, this.xfunc, this.yfunc);
     let d2 = this.samplePointsSecondDerivative(samplePoints, tIncrement, this.xfunc, this.yfunc);
-    let k = this.curvature(d2);
+    //let k = this.curvature(d2);
 
-    let normals = this.createAndScaleNormalVectors(d, k);
+    let normals = this.createNormalVectors(d);
+    console.log("normalPoints: "+normals.map((elem)=>{return "("+elem.x+", "+elem.y+")"}));
+
+
+    let curvaturePoints = this.curvature(d2, normals);
+    console.log("curvaturePoints: "+curvaturePoints.map((elem)=>{return "("+elem.x+", "+elem.y+")"}));
+    let evolutePoints = this.evolutePoints(samplingPointsData, curvaturePoints, normals);
+    console.log("evolutePoints: "+evolutePoints.map((elem)=>{return "("+elem[0]+", "+elem[1]+")"}));
 
 
     // draw normal lines - sampling points data + calculate second point along normal
     // create a set of points for the second point (the one on the evolute curve)
-    let evolutePoints: [number, number][] = samplingPointsData.map((elem, index): [number, number]=> {
+    /*let evolutePoints: [number, number][] = samplingPointsData.map((elem, index): [number, number]=> {
       return [
         Number(elem.x + normals[index].x),
         Number(elem.y + normals[index].y)
 
       ];
-    });
+    });*/
 
     //console.log("evolute xs: "+evolutePoints.map((entry)=> entry.x));
     //console.log("evolute ys: "+evolutePoints.map((entry)=> entry.y));
 
     // associate sample points and evolute points to generate normal lines
-    let normalLines = samplingPointsData.map((elem, index)=>{
-      return {
-        x1: elem.x,
-        y1: elem.y,
-        x2: elem.x+ normals[index].x,
-        y2: elem.y+ normals[index].y,
-      }
-    });
+    let normalLines: Array<Line> = this.createNormalLineEndpoints(samplingPointsData, normals, evolutePoints);
 
     //console.log("evolutePoints: "+evolutePoints);
 
@@ -189,8 +247,11 @@ export class GraphComponent implements OnInit {
     // dynamically pick the scales based on min/max of points (including evolute points!)
 
     let xMin = d3.min(this.x.concat(evolutePoints.map((elem)=>elem[0])));
-    let xScale = d3.scaleLinear().domain([xMin, d3.max(this.x.concat(evolutePoints.map((elem)=>elem[0])))]).range([0, this.svgWidth]);
-    let yScale = d3.scaleLinear().domain([d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1]))), d3.max(this.y.concat(evolutePoints.map((elem)=>elem[1])))]).range([this.svgHeight, 0]);
+    let xMax = d3.max(this.x.concat(evolutePoints.map((elem)=>elem[0])));
+    let xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, this.svgWidth]);
+    let yMin = d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1])));
+    let yMax = d3.max(this.y.concat(evolutePoints.map((elem)=>elem[1])));
+    let yScale = d3.scaleLinear().domain([yMin, yMax]).range([this.svgHeight, 0]);
 
 
 
@@ -240,7 +301,8 @@ export class GraphComponent implements OnInit {
       .append<SVGCircleElement>("circle")
       .transition().delay(function(d, i){
       return 2*numPoints*msDelay+i*msDelay;
-    })      .attr("cx", function(d){return xScale(d[0]);})
+    })
+      .attr("cx", function(d){ return xScale(d[0]);})
       .attr("cy", function(d){return h-yScale(d[1]);}).attr("r", "3").attr("fill", "purple");
 
 
