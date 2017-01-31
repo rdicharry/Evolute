@@ -31,9 +31,16 @@ export class GraphComponent implements OnInit {
   public x: Array<number>;
   public y: Array<number>;
 
+  public xexpression: String = "t";
+  public yexpression: String = "t^2";
+
+  private xfuncTree;
+  private yfuncTree;
+  private scope = {};
   public xfunc = function(t){return Math.cos(t)}; // parameterized function for x values
   public yfunc = function(t){return Math.sin(t)}; // parameterized function for y values
 
+  svg;
 
 
   private numCurvePoints = 1000; // input points for drawing curve
@@ -46,6 +53,17 @@ export class GraphComponent implements OnInit {
   }
 
   redrawSVG(){
+
+    /*this.xfuncTree = this.mathjs.parse(this.xexpression).compile();
+    this.yfuncTree = this.mathjs.parse(this.yexpression).compile();
+    this.xfunc = function(ti){return this.xfuncTree.eval({t: ti})};
+    this.yfunc = function(ti){return this.yfuncTree.eval({t: ti})};*/
+    this.scope = {};
+
+    this.xfunc = this.mathjs.eval('x(t) = '+this.xexpression, this.scope);
+    this.yfunc = this.mathjs.eval('y(t) = '+this.yexpression, this.scope);
+
+
     let d3 = this.d3;
     this.drawSVG(d3);
   }
@@ -256,16 +274,16 @@ export class GraphComponent implements OnInit {
 
 
 
-    let svg = d3.select("#graph-svg").append("svg");
-    svg.attr("width", this.svgWidth).attr("height", this.svgHeight);
+    this.svg = d3.select("#graph-svg").append("svg");
+    this.svg.attr("width", this.svgWidth).attr("height", this.svgHeight);
 
     let h = this.svgHeight;
     let padding = 30;
 
 
 
-    svg.append("g").attr("class", "function-lines").selectAll<SVGLineElement, any>("line").data(dataset).enter()
-      .append<SVGLineElement>("line")
+    this.svg.append("g").attr("class", "function-lines").selectAll("line").data(dataset).enter()
+      .append("line")
       .attr("x1", function(d){return xScale(d.x1);})
       .attr("x2", function(d){return xScale(d.x2);})
       .attr("y1", function(d){return h-yScale(d.y1);})
@@ -275,16 +293,16 @@ export class GraphComponent implements OnInit {
 
     let msDelay = 200; // ms
     let numPoints=this.numPoints;
-    svg.append("g").attr("class", "sampling-points").selectAll<SVGCircleElement, any>("circle").data(samplingPointsData).enter()
-      .append<SVGCircleElement>("circle")
+    this.svg.append("g").attr("class", "sampling-points").selectAll("circle").data(samplingPointsData).enter()
+      .append("circle")
       .transition().delay(function(d, i){
         return i*msDelay;
     })
       .attr("cx", function(d){return xScale(d.x);})
       .attr("cy", function(d){return h-yScale(d.y);}).attr("r", "3").attr("fill", "green");
 
-    svg.append("g").attr("class", "normal-lines").selectAll<SVGLineElement, any>("line").data(normalLines)
-      .enter().append<SVGLineElement>("line")
+    this.svg.append("g").attr("class", "normal-lines").selectAll("line").data(normalLines)
+      .enter().append("line")
       .transition().delay(function(d, i){
       return numPoints*msDelay+i*msDelay;
     })
@@ -297,8 +315,8 @@ export class GraphComponent implements OnInit {
 
 
     // draw normal end points (samples along evolute curve
-    svg.append("g").attr("class", "evolute-points").selectAll<SVGCircleElement, any>("circle").data(evolutePoints).enter()
-      .append<SVGCircleElement>("circle")
+    this.svg.append("g").attr("class", "evolute-points").selectAll("circle").data(evolutePoints).enter()
+      .append("circle")
       .transition().delay(function(d, i){
       return 2*numPoints*msDelay+i*msDelay;
     })
@@ -352,8 +370,8 @@ export class GraphComponent implements OnInit {
 
     console.log("path: "+ lineFunction(evolutePoints));
 
-    svg/*.append("g").attr("class", "evolute-curve").selectAll<SVGPathElement, any>("path")*/
-      .append<SVGPathElement>("path")
+    this.svg/*.append("g").attr("class", "evolute-curve").selectAll<SVGPathElement, any>("path")*/
+      .append("path")
       .transition().delay(3*msDelay*(this.numPoints+1))
       /*.data(evolutePoints).enter()*/.attr("class", "line")
       .attr("d", lineFunction(evolutePoints))
@@ -373,8 +391,8 @@ export class GraphComponent implements OnInit {
     // stroke and fill of axis set in css
     //svg.append("g").call(xAxis);
     //svg.append("g").call(yAxis);
-    svg.append("g").attr("class", "axis").attr("transform", "translate(0,"+(h-padding)+")").call(xAxis);
-    svg.append("g").attr("class", "axis").attr("transform", "translate("+padding+/*xScale(xMin)+*/", 0)").call(yAxis);
+    this.svg.append("g").attr("class", "axis").attr("transform", "translate(0,"+(h-padding)+")").call(xAxis);
+    this.svg.append("g").attr("class", "axis").attr("transform", "translate("+padding+/*xScale(xMin)+*/", 0)").call(yAxis);
 
   }
 
