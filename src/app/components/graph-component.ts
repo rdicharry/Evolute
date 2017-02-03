@@ -145,6 +145,24 @@ export class GraphComponent implements OnInit {
   }
 
   /**
+   * reference: wikipedia: osculating circle
+   * @param firstDerivativePoints
+   * @param secondDerivativePoints
+   */
+  radiusOfCurvature(firstDerivativePoints, secondDerivativePoints){
+
+    return firstDerivativePoints.map(function(item, index) {
+      let xp = firstDerivativePoints[index][0];
+      let yp = firstDerivativePoints[index][1];
+      let xpp = secondDerivativePoints[index][0];
+      let ypp = secondDerivativePoints[index][1];
+
+      return  ((xp**2+yp**2)**1.5)/(xp*ypp-xpp*yp);
+    })
+  }
+
+  /**
+   * // wrong!!
    * calculate curvature at sampling points
    * @param secondDerivative computed at sampling points
    * @returns
@@ -169,19 +187,20 @@ export class GraphComponent implements OnInit {
    * @param curvaturePoints
    * @param normalPoints
    */
-  evolutePoints(samplePoints, curvaturePoints, normalPoints){
+  evolutePoints(samplePoints, radiusOfCurvaturePoints, normalPoints){
     return samplePoints.map((elem, index)=>{
-      let mag = GraphComponent.magnitude(curvaturePoints[index].x, curvaturePoints[index].y);
-      console.log(mag);
+      //let mag = GraphComponent.magnitude(curvaturePoints[index].x, curvaturePoints[index].y);
+      //console.log(mag);
       return [
-        elem.x+normalPoints[index].x/mag,
-        elem.y+normalPoints[index].y/mag
+        elem.x+radiusOfCurvaturePoints[index]*normalPoints[index].x,
+        elem.y+radiusOfCurvaturePoints[index]*normalPoints[index].y
       ]
     })
 
   }
 
   /** TODO this is wrong!! */
+  /*
   radiusOfCurvature(firstDerivative, secondDerivative){
 
     return secondDerivative.map((elem, index)=>{
@@ -189,7 +208,7 @@ export class GraphComponent implements OnInit {
       return (mag**3)/(firstDerivative[index].x*secondDerivative[index].y-firstDerivative[index].y*secondDerivative[index].x)
     })
 
-  }
+  }*/
 
   static magnitude(x,y){
     return Math.sqrt((Math.pow(x,2)+Math.pow(y,2)));
