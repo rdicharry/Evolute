@@ -3,6 +3,8 @@ A dynamic visualizer for the "evolute" of a 2-D parameterized curve.
 
 Uses [D3](https://github.com/d3) via this helpful project which imports the D3 library as an Angular2 service: [](https://github.com/tomwanzek/d3-ng2-service)
 
+Uses [mathjs](http://mathjs.org/) to evaluate user-entered function expressions.
+
 Runs on a MEAN stack adaped from a previous project. See [documentation of that project](https://github.com/rdicharry/mean-angular-2) for more details.
 
 Helpful Demos:
