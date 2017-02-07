@@ -26,13 +26,13 @@ export class GraphComponent implements OnInit {
   private svgHeight = 500;
 
   public a:number = -3.2;
-  public b:number = 3;
+  public b:number = 3.2;
 
   public x: Array<number>;
   public y: Array<number>;
 
-  public xexpression: String = "t";
-  public yexpression: String = "t^2";
+  public xexpression: String = "cos(t)";
+  public yexpression: String = "sin(t)";
 
   private xfuncTree;
   private yfuncTree;
@@ -152,12 +152,12 @@ export class GraphComponent implements OnInit {
   radiusOfCurvature(firstDerivativePoints, secondDerivativePoints){
 
     return firstDerivativePoints.map(function(item, index) {
-      let xp = firstDerivativePoints[index][0];
-      let yp = firstDerivativePoints[index][1];
-      let xpp = secondDerivativePoints[index][0];
-      let ypp = secondDerivativePoints[index][1];
+      let xp = firstDerivativePoints[index].x;
+      let yp = firstDerivativePoints[index].y;
+      let xpp = secondDerivativePoints[index].x;
+      let ypp = secondDerivativePoints[index].y;
 
-      return  ((xp**2+yp**2)**1.5)/(xp*ypp-xpp*yp);
+      return  Math.abs(((xp**2+yp**2)**1.5)/(xp*ypp-xpp*yp));
     })
   }
 
@@ -218,7 +218,7 @@ export class GraphComponent implements OnInit {
 
     // sample at some number of points for drawing evolute
     let sampleIncrement:number = (this.b-this.a)/this.numPoints;
-    let samplePoints = d3.range(this.numPoints).map((elem, index)=>this.a+index*sampleIncrement);
+    let samplePoints = d3.range(this.numPoints).map((elem, index)=>Number(this.a)+index*sampleIncrement);
 
     let tIncrement: number = (this.b-this.a)/this.numCurvePoints;
      // input points for drawing path
@@ -259,7 +259,11 @@ export class GraphComponent implements OnInit {
 
     let curvaturePoints = this.curvature(d2, normals);
     console.log("curvaturePoints: "+curvaturePoints.map((elem)=>{return "("+elem.x+", "+elem.y+")"}));
-    let evolutePoints = this.evolutePoints(samplingPointsData, curvaturePoints, normals);
+
+    let radiusOfCurvaturePoints = this.radiusOfCurvature(d, d2);
+    console.log("radiusOfCurvaturePoints: "+radiusOfCurvaturePoints);
+
+    let evolutePoints = this.evolutePoints(samplingPointsData, radiusOfCurvaturePoints, normals);
     console.log("evolutePoints: "+evolutePoints.map((elem)=>{return "("+elem[0]+", "+elem[1]+")"}));
 
 
