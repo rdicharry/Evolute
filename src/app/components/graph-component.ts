@@ -222,13 +222,17 @@ export class GraphComponent implements OnInit {
 
     let tIncrement: number = (this.b-this.a)/this.numCurvePoints;
      // input points for drawing path
-    let t = d3.range(this.numCurvePoints).map((elem,index)=>this.a+index*tIncrement);
+    let t = d3.range(this.numCurvePoints).map((elem,index)=>Number(this.a)+index*tIncrement);
 
+    console.log("t: "+t);
 
     this.x = d3.range(this.numCurvePoints).map((elem, index)=>this.xfunc(t[index]));
+    console.log("x: "+this.x);
+
 
 
     this.y = d3.range(this.numCurvePoints).map((elem, index)=>this.yfunc(t[index]));
+    console.log("y: "+this.y);
 
    // let dataset = new Array(this.numCurvePoints);
     //dataset = dataset.map((elem, index)=>[x[index],y[index]]);
@@ -290,10 +294,17 @@ export class GraphComponent implements OnInit {
 
     let xMin = d3.min(this.x.concat(evolutePoints.map((elem)=>elem[0])));
     let xMax = d3.max(this.x.concat(evolutePoints.map((elem)=>elem[0])));
-    let xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, this.svgWidth]);
+
+    //let xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, this.svgWidth]);
     let yMin = d3.min(this.y.concat(evolutePoints.map((elem)=>elem[1])));
     let yMax = d3.max(this.y.concat(evolutePoints.map((elem)=>elem[1])));
-    let yScale = d3.scaleLinear().domain([yMin, yMax]).range([this.svgHeight, 0]);
+    //let yScale = d3.scaleLinear().domain([yMin, yMax]).range([this.svgHeight, 0]);
+
+
+
+    let xScale = d3.scaleLinear().domain([d3.min([xMin, yMin]), d3.max([xMax, yMax])]).range([0, this.svgWidth]);
+    let yScale = d3.scaleLinear().domain([d3.min([xMin, yMin]), d3.max([xMax, yMax])]).range([this.svgHeight, 0]);
+
 
 
 

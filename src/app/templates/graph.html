@@ -1,14 +1,18 @@
 <div class="container">
   <div class="row">
     <div class="col-md-6">
+
       <div class="form-group"><label for="xt">x(t) = </label><input type="text" id="xt" [(ngModel)]="xexpression"/></div>
       <div class="form-group"><label for="yt">y(t) = </label><input type="text" id="yt" [(ngModel)]="yexpression"/></div>
       <div class="form-group">t &#x22FF; &#91;<input title="a" type="text" id="a" aria-label="a" [(ngModel)]="a"/>,<input title="b" type="text" id="b" aria-label="b" [(ngModel)]="b"/>&#93;</div>
       <div class="form-group"><label for="num-points">Number of Sampling Points: </label><input type="text" id="num-points" [(ngModel)]="numPoints"/></div>
       <button class="submit" (click)="redrawSVG()">Re-Draw</button>
+      <div class="input-padding"></div>
     </div >
     <div class="col-md-6">
-      <div id="graph-svg"></div>
+      <div class="graph">
+        <div id="graph-svg"></div>
+      </div>
     </div>
   </div >
   <!--<div class="row">
